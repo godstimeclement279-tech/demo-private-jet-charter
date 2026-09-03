@@ -46,15 +46,16 @@ export const Navbar: React.FC<NavbarProps> = ({
           onClick={() => handleNavClick('hero')} 
           className="flex items-center gap-3 cursor-pointer group"
         >
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/20 group-hover:scale-105 transition-transform">
-            <Plane className="w-5 h-5 text-[#070b12] -rotate-45" />
+          <div className="relative w-11 h-11 rounded-xl bg-gradient-to-br from-[#1a2335] to-[#0c121e] border border-amber-400/40 flex items-center justify-center shadow-lg shadow-black/40 group-hover:border-amber-300 transition-all">
+            <span className="font-display font-extrabold text-xs tracking-wider text-amber-300">GT</span>
+            <Plane className="w-3.5 h-3.5 text-amber-400 -rotate-45 absolute -top-1 -right-1 drop-shadow" />
           </div>
           <div>
-            <span className="font-display font-bold text-lg sm:text-xl tracking-wider text-white flex items-center gap-1.5">
-              AEROLUXE <span className="text-amber-400 font-light">NIGERIA</span>
+            <span className="font-display font-bold text-base sm:text-lg tracking-wider text-white flex items-center gap-1.5">
+              GT PRIVATE JET
             </span>
-            <p className="text-[10px] uppercase tracking-widest text-slate-400">
-              Private Jet Charter & VIP Aviation
+            <p className="text-[9px] uppercase tracking-[0.25em] text-amber-400/90 font-mono">
+              CHARTER & AVIATION
             </p>
           </div>
         </div>

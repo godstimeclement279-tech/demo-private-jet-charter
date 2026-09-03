@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import * as THREE from 'three';
-import { Camera, Compass, Eye, Maximize2, RotateCcw, Sparkles, Sun, Moon } from 'lucide-react';
+import { Camera, Compass, Eye, RotateCcw, Crosshair } from 'lucide-react';
+import { audioService } from '../../utils/audio';
 
 interface JetSceneProps {
   scrollProgress: number; // 0 to 1
@@ -42,9 +43,27 @@ export const JetScene: React.FC<JetSceneProps> = ({
   const accentMaterialRef = useRef<THREE.MeshStandardMaterial | null>(null);
 
   // Manual rotation angles when in 'orbit' mode
-  const orbitRotation = useRef({ x: 0.1, y: 0.8 });
+  const orbitRotation = useRef({ x: 0.15, y: 0.8 });
+  const orbitDistance = useRef(11.5);
   const pointerStart = useRef({ x: 0, y: 0 });
   const isPointerDown = useRef(false);
+
+  // Smooth camera & jet interpolation vectors
+  const targetCameraPos = useRef(new THREE.Vector3(0, 1.2, 14));
+  const currentCameraPos = useRef(new THREE.Vector3(0, 1.2, 14));
+  const targetLookAt = useRef(new THREE.Vector3(0, 0, 0));
+  const currentLookAt = useRef(new THREE.Vector3(0, 0, 0));
+
+  const targetJetPos = useRef(new THREE.Vector3(0, 0, 0));
+  const currentJetPos = useRef(new THREE.Vector3(0, 0, 0));
+  const targetJetRot = useRef(new THREE.Euler(0, 0, 0));
+
+  // Refs for current props in animation loop
+  const cameraModeRef = useRef(cameraMode);
+  cameraModeRef.current = cameraMode;
+
+  const scrollProgressRef = useRef(scrollProgress);
+  scrollProgressRef.current = scrollProgress;
 
   // Build the 3D Procedural Luxury Business Jet
   const buildLuxuryJet = useCallback((): THREE.Group => {
@@ -415,6 +434,7 @@ export const JetScene: React.FC<JetSceneProps> = ({
 
     const width = containerRef.current.clientWidth || window.innerWidth;
     const height = containerRef.current.clientHeight || window.innerHeight;
+    const isMobile = width < 768;
 
     // 1. Scene
     const scene = new THREE.Scene();
@@ -429,12 +449,12 @@ export const JetScene: React.FC<JetSceneProps> = ({
     // 3. WebGL Renderer
     const renderer = new THREE.WebGLRenderer({
       canvas: canvasRef.current,
-      antialias: true,
+      antialias: !isMobile,
       alpha: true,
       powerPreference: 'high-performance',
     });
     renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(isMobile ? Math.min(window.devicePixelRatio, 1.35) : Math.min(window.devicePixelRatio, 1.8));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.1;
     rendererRef.current = renderer;
@@ -487,6 +507,8 @@ export const JetScene: React.FC<JetSceneProps> = ({
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
       const elapsedTime = clock.getElapsedTime();
+      const currentMode = cameraModeRef.current;
+      const pProgress = scrollProgressRef.current;
 
       // Spin turbine blades
       if (turbineLeftRef.current) turbineLeftRef.current.rotation.z += 0.35;
@@ -507,20 +529,116 @@ export const JetScene: React.FC<JetSceneProps> = ({
 
       // Drift atmosphere particles past aircraft
       if (cloudsGroupRef.current) {
-        cloudsGroupRef.current.position.z += 0.08;
+        const cloudSpeed = currentMode === 'cockpit' ? 0.22 : 0.08;
+        cloudsGroupRef.current.position.z += cloudSpeed;
         if (cloudsGroupRef.current.position.z > 25) {
           cloudsGroupRef.current.position.z = -15;
         }
       }
 
-      // Smooth flight floating oscillation (aerodynamic lift effect)
-      if (jetGroupRef.current && cameraMode === 'cinematic') {
-        const pitchOsc = Math.sin(elapsedTime * 1.2) * 0.015;
-        const rollOsc = Math.cos(elapsedTime * 0.9) * 0.02;
-        const altitudeOsc = Math.sin(elapsedTime * 1.5) * 0.08;
-        jetGroupRef.current.position.y += (altitudeOsc - jetGroupRef.current.position.y * 0.05) * 0.05;
-        jetGroupRef.current.rotation.x += (pitchOsc - jetGroupRef.current.rotation.x * 0.02) * 0.05;
-        jetGroupRef.current.rotation.z += (rollOsc - jetGroupRef.current.rotation.z * 0.02) * 0.05;
+      // CALCULATE TARGETS ACCORDING TO ACTIVE CAMERA MODE
+      if (currentMode === 'cinematic') {
+        // Dynamic Scroll-synced Flight Path
+        if (runwayGroupRef.current) {
+          if (pProgress < 0.18) {
+            const p = pProgress / 0.18;
+            runwayGroupRef.current.visible = true;
+            runwayGroupRef.current.position.y = -2.4 - p * 8; // Runway drops as jet climbs
+            targetJetPos.current.set(0, -0.8 + p * 1.8, p * -1.5);
+            targetJetRot.current.set(-0.06 - p * 0.18, 0.45 - p * 0.25, -0.04 - p * 0.08);
+            targetCameraPos.current.set(5.5 - p * 3.5, 0.8 + p * 0.8, 12 - p * 2);
+            targetLookAt.current.set(0, 0.2, 0);
+          } else if (pProgress < 0.45) {
+            const p = (pProgress - 0.18) / (0.45 - 0.18);
+            runwayGroupRef.current.visible = false;
+            targetJetPos.current.set(-1.2 + p * 2.4, 0.6 + Math.sin(p * Math.PI) * 0.5, -0.5);
+            targetJetRot.current.set(-0.08, 0.1 + p * 0.4, 0.15 - p * 0.35); // Banking cruise
+            targetCameraPos.current.set(-6 + p * 11, 2.5, 10 - p * 1.5);
+            targetLookAt.current.set(0, 0, 0);
+          } else if (pProgress < 0.72) {
+            const p = (pProgress - 0.45) / (0.72 - 0.45);
+            runwayGroupRef.current.visible = false;
+            targetJetPos.current.set(0, 0.1, 0);
+            targetJetRot.current.set(0.08, 0.5 + p * Math.PI * 1.8, 0); // Majestic rotation
+            targetCameraPos.current.set(0, 1.8, 11.5);
+            targetLookAt.current.set(0, 0.2, 0);
+          } else if (pProgress < 0.88) {
+            const p = (pProgress - 0.72) / (0.88 - 0.72);
+            runwayGroupRef.current.visible = false;
+            targetJetPos.current.set(2.8 - p * 3.5, -0.2, -1.0);
+            targetJetRot.current.set(-0.15, -0.5 + p * 0.3, 0.1);
+            targetCameraPos.current.set(-4, 3.2, 9.5);
+            targetLookAt.current.set(0.5, 0, 0);
+          } else {
+            const p = (pProgress - 0.88) / (1.0 - 0.88);
+            runwayGroupRef.current.visible = false;
+            targetJetPos.current.set(-1.8 + p * 1.2, -0.4, 1.8);
+            targetJetRot.current.set(-0.05, 0.8 - p * 0.2, -0.05);
+            targetCameraPos.current.set(3.2, 0.6, 7.2);
+            targetLookAt.current.set(-0.5, 0.1, 0);
+          }
+        }
+        // Aerodynamic flight float
+        targetJetPos.current.y += Math.sin(elapsedTime * 1.5) * 0.08;
+        targetJetRot.current.x += Math.sin(elapsedTime * 1.2) * 0.012;
+        targetJetRot.current.z += Math.cos(elapsedTime * 0.9) * 0.015;
+
+      } else if (currentMode === 'orbit') {
+        // 360 Interactive Inspection Pedestal
+        if (runwayGroupRef.current) runwayGroupRef.current.visible = false;
+        targetJetPos.current.set(0, 0, 0);
+
+        // Auto gentle rotation if user is not actively dragging
+        if (!isPointerDown.current) {
+          orbitRotation.current.y += 0.003;
+        }
+
+        targetJetRot.current.set(orbitRotation.current.x, orbitRotation.current.y, 0);
+        targetCameraPos.current.set(0, 1.2, orbitDistance.current);
+        targetLookAt.current.set(0, 0.1, 0);
+
+      } else if (currentMode === 'cockpit') {
+        // Authentic Captain's Seat Cockpit POV looking through windshield
+        if (runwayGroupRef.current) runwayGroupRef.current.visible = false;
+        targetJetPos.current.set(0, 0, 0);
+
+        const bank = Math.sin(elapsedTime * 0.8) * 0.04;
+        const pitch = -0.02 + Math.cos(elapsedTime * 1.1) * 0.015;
+        targetJetRot.current.set(pitch, bank * 0.4, -bank);
+
+        // Pilot eye position looking down the nose cone
+        const pilotVibeX = Math.sin(elapsedTime * 16) * 0.002;
+        const pilotVibeY = Math.cos(elapsedTime * 14) * 0.002;
+        targetCameraPos.current.set(-0.25 + pilotVibeX, 0.76 + pilotVibeY, 2.35);
+        targetLookAt.current.set(bank * 1.8, 0.38 + pitch * 2, 12.0);
+
+      } else if (currentMode === 'wing') {
+        // Starboard Over-Wing Cam with turbofan engine in view
+        if (runwayGroupRef.current) runwayGroupRef.current.visible = false;
+        targetJetPos.current.set(0, 0, 0);
+
+        const bank = Math.sin(elapsedTime * 0.6) * 0.035;
+        targetJetRot.current.set(-0.025, 0.08 + bank * 0.2, bank);
+
+        // Over-wing camera vantage
+        const engineVibe = Math.sin(elapsedTime * 32) * 0.003;
+        targetCameraPos.current.set(4.3 + engineVibe, 0.90 + engineVibe, -2.2);
+        targetLookAt.current.set(0.6, 0.24 + bank * 0.4, 1.6);
+      }
+
+      // FLUID LERP INTERPOLATION
+      currentCameraPos.current.lerp(targetCameraPos.current, 0.08);
+      currentLookAt.current.lerp(targetLookAt.current, 0.08);
+      camera.position.copy(currentCameraPos.current);
+      camera.lookAt(currentLookAt.current);
+
+      if (jetGroupRef.current) {
+        currentJetPos.current.lerp(targetJetPos.current, 0.08);
+        jetGroupRef.current.position.copy(currentJetPos.current);
+
+        jetGroupRef.current.rotation.x += (targetJetRot.current.x - jetGroupRef.current.rotation.x) * 0.08;
+        jetGroupRef.current.rotation.y += (targetJetRot.current.y - jetGroupRef.current.rotation.y) * 0.08;
+        jetGroupRef.current.rotation.z += (targetJetRot.current.z - jetGroupRef.current.rotation.z) * 0.08;
       }
 
       renderer.render(scene, camera);
@@ -533,7 +651,7 @@ export const JetScene: React.FC<JetSceneProps> = ({
       window.removeEventListener('resize', handleResize);
       renderer.dispose();
     };
-  }, [buildLuxuryJet, buildRunway, buildAtmosphere, cameraMode]);
+  }, [buildLuxuryJet, buildRunway, buildAtmosphere]);
 
   // Update livery color when prop changes
   useEffect(() => {
@@ -545,97 +663,6 @@ export const JetScene: React.FC<JetSceneProps> = ({
       accentMaterialRef.current.emissive.set(accentColor);
     }
   }, [selectedAircraftLivery, accentColor]);
-
-  // Adjust Camera and Jet Stance based on Scroll Progress & Modes
-  useEffect(() => {
-    if (!cameraRef.current || !jetGroupRef.current || !runwayGroupRef.current) return;
-
-    const camera = cameraRef.current;
-    const jet = jetGroupRef.current;
-    const runway = runwayGroupRef.current;
-
-    if (cameraMode === 'cinematic') {
-      // 0.0 -> 0.18: Runway Hero Stance
-      if (scrollProgress < 0.18) {
-        const p = scrollProgress / 0.18;
-        runway.visible = true;
-        runway.position.y = -2.4 - p * 8; // Runway drops away as jet ascends
-
-        // Jet taxiing and taking off
-        jet.position.set(0, -0.8 + p * 1.8, p * -1.5);
-        jet.rotation.set(-0.06 - p * 0.18, 0.45 - p * 0.25, -0.04 - p * 0.08);
-
-        // Camera sweeps from low side to three-quarter tracking
-        camera.position.set(5.5 - p * 3.5, 0.8 + p * 0.8, 12 - p * 2);
-        camera.lookAt(0, 0.2, 0);
-      }
-      // 0.18 -> 0.45: High Altitude Flight Experience & Performance Cruise
-      else if (scrollProgress < 0.45) {
-        const p = (scrollProgress - 0.18) / (0.45 - 0.18);
-        runway.visible = false;
-
-        // Elegant banking turn across Nigerian airspace
-        jet.position.set(-1.2 + p * 2.4, 0.6 + Math.sin(p * Math.PI) * 0.5, -0.5);
-        jet.rotation.set(-0.08, 0.1 + p * 0.4, 0.15 - p * 0.35); // Bank roll
-
-        camera.position.set(-6 + p * 11, 2.5, 10 - p * 1.5);
-        camera.lookAt(0, 0, 0);
-      }
-      // 0.45 -> 0.72: Fleet Showcase - Central Pedestal for 360 Inspection
-      else if (scrollProgress < 0.72) {
-        const p = (scrollProgress - 0.45) / (0.72 - 0.45);
-        runway.visible = false;
-
-        // Centered for inspection
-        jet.position.set(0, 0.1, 0);
-        jet.rotation.set(0.08, 0.5 + p * Math.PI * 1.8, 0); // Majestic rotation showcase
-
-        camera.position.set(0, 1.8, 11.5);
-        camera.lookAt(0, 0.2, 0);
-      }
-      // 0.72 -> 0.88: Flight Booking & Routes Navigation
-      else if (scrollProgress < 0.88) {
-        const p = (scrollProgress - 0.72) / (0.88 - 0.72);
-        runway.visible = false;
-
-        // Jet angled toward route trajectory
-        jet.position.set(2.8 - p * 3.5, -0.2, -1.0);
-        jet.rotation.set(-0.15, -0.5 + p * 0.3, 0.1);
-
-        camera.position.set(-4, 3.2, 9.5);
-        camera.lookAt(0.5, 0, 0);
-      }
-      // 0.88 -> 1.0: VIP Concierge Arrival & Luxury Close-Up
-      else {
-        const p = (scrollProgress - 0.88) / (1.0 - 0.88);
-        runway.visible = false;
-
-        // Close-up on sleek fuselage, windows, and luxury emblem
-        jet.position.set(-1.8 + p * 1.2, -0.4, 1.8);
-        jet.rotation.set(-0.05, 0.8 - p * 0.2, -0.05);
-
-        camera.position.set(3.2, 0.6, 7.2);
-        camera.lookAt(-0.5, 0.1, 0);
-      }
-    } else if (cameraMode === 'cockpit') {
-      jet.position.set(0, 0, 0);
-      jet.rotation.set(0, 0, 0);
-      camera.position.set(0, 0.4, 4.2);
-      camera.lookAt(0, 0.4, 20);
-    } else if (cameraMode === 'wing') {
-      jet.position.set(0, 0, 0);
-      jet.rotation.set(0, 0.15, 0.05);
-      camera.position.set(5.2, 0.8, -1.5);
-      camera.lookAt(0, 0.2, 1.5);
-    } else if (cameraMode === 'orbit') {
-      // Manual interactive orbit angles
-      jet.position.set(0, 0, 0);
-      jet.rotation.x = orbitRotation.current.x;
-      jet.rotation.y = orbitRotation.current.y;
-      camera.position.set(0, 1.5, 11);
-      camera.lookAt(0, 0, 0);
-    }
-  }, [scrollProgress, cameraMode]);
 
   // Pointer drag events for 'orbit' inspection mode
   const handlePointerDown = (e: React.PointerEvent) => {
@@ -650,23 +677,23 @@ export const JetScene: React.FC<JetSceneProps> = ({
     const deltaX = e.clientX - pointerStart.current.x;
     const deltaY = e.clientY - pointerStart.current.y;
 
-    orbitRotation.current.y += deltaX * 0.008;
-    orbitRotation.current.x += deltaY * 0.008;
+    orbitRotation.current.y += deltaX * 0.007;
+    orbitRotation.current.x += deltaY * 0.007;
 
     // Clamp vertical pitch to prevent flipping
-    orbitRotation.current.x = Math.max(-1.0, Math.min(1.0, orbitRotation.current.x));
+    orbitRotation.current.x = Math.max(-1.1, Math.min(1.1, orbitRotation.current.x));
 
     pointerStart.current = { x: e.clientX, y: e.clientY };
-
-    if (jetGroupRef.current) {
-      jetGroupRef.current.rotation.x = orbitRotation.current.x;
-      jetGroupRef.current.rotation.y = orbitRotation.current.y;
-    }
   };
 
   const handlePointerUp = () => {
     isPointerDown.current = false;
     setIsDragging(false);
+  };
+
+  const handleWheel = (e: React.WheelEvent) => {
+    if (cameraMode !== 'orbit') return;
+    orbitDistance.current = Math.max(6.5, Math.min(18.0, orbitDistance.current + e.deltaY * 0.008));
   };
 
   return (
@@ -676,26 +703,136 @@ export const JetScene: React.FC<JetSceneProps> = ({
     >
       <canvas
         ref={canvasRef}
-        className={`w-full h-full ${cameraMode === 'orbit' ? 'pointer-events-auto cursor-grab active:cursor-grabbing' : 'pointer-events-none'}`}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
+        style={{ touchAction: 'pan-y' }}
+        className="w-full h-full pointer-events-none"
       />
 
+      {/* 360 Orbit Dedicated Interaction Capture Layer (elevated above main content when active) */}
+      {cameraMode === 'orbit' && (
+        <div
+          className="fixed inset-0 z-20 cursor-grab active:cursor-grabbing touch-none select-none pointer-events-auto"
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
+          onWheel={handleWheel}
+        >
+          <div className="absolute top-24 sm:top-28 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full bg-[#080d16]/95 border border-amber-400/40 text-amber-300 text-[11px] font-mono tracking-wider backdrop-blur-md shadow-2xl flex items-center gap-2 pointer-events-none">
+            <RotateCcw className="w-3.5 h-3.5 text-amber-400 animate-spin" style={{ animationDuration: '8s' }} />
+            <span>360° ORBIT ACTIVE • DRAG TO ROTATE • WHEEL/PINCH TO ZOOM</span>
+          </div>
+        </div>
+      )}
+
+      {/* Cockpit / Flight Deck Avionics Heads-Up Display (HUD) */}
+      {cameraMode === 'cockpit' && (
+        <div className="pointer-events-none fixed inset-0 z-20 flex flex-col justify-between p-6 sm:p-12 font-mono select-none">
+          {/* Top Flight Deck Bar */}
+          <div className="flex items-center justify-between text-xs text-amber-300/90 bg-[#070b12]/80 backdrop-blur-sm border border-amber-500/20 px-4 py-2 rounded-xl max-w-xl mx-auto w-full shadow-2xl">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+              <span className="font-bold tracking-wider">GT-OPS FLIGHT DECK</span>
+            </div>
+            <div className="text-slate-400 text-[10px]">
+              AUTOPILOT: <span className="text-emerald-400 font-bold">NAV / VNAV ENGAGED</span>
+            </div>
+            <div className="text-[10px] text-amber-200">
+              HDG: <span className="font-bold">340° MAG</span>
+            </div>
+          </div>
+
+          {/* Center Horizon Pitch Ladder & Flight Director Reticle */}
+          <div className="relative mx-auto flex flex-col items-center justify-center text-amber-400/70">
+            <div className="text-[10px] tracking-widest mb-1 text-emerald-400">--- +10° ---</div>
+            <div className="w-48 h-px bg-amber-400/60 my-1 flex items-center justify-between px-2">
+              <span className="text-[9px]">L</span>
+              <div className="w-4 h-4 border border-amber-400 rounded-full flex items-center justify-center">
+                <div className="w-1.5 h-1.5 bg-amber-400 rounded-full" />
+              </div>
+              <span className="text-[9px]">R</span>
+            </div>
+            <div className="text-[10px] tracking-widest mt-1 text-emerald-400">--- -10° ---</div>
+
+            <div className="mt-2 text-[10px] text-amber-300 font-bold flex items-center gap-1.5 bg-[#070b12]/70 px-3 py-1 rounded-full border border-amber-500/30">
+              <Crosshair className="w-3.5 h-3.5 text-amber-400" />
+              <span>HORIZON LOCKED • FL450 CRUISE</span>
+            </div>
+          </div>
+
+          {/* Bottom Cockpit Instrument Tape */}
+          <div className="flex items-center justify-between text-xs text-slate-300 max-w-3xl mx-auto w-full px-5 py-2.5 bg-[#070b12]/85 backdrop-blur-md border border-white/10 rounded-2xl shadow-2xl">
+            <div>
+              <span className="text-slate-500 text-[9px] block">AIRSPEED</span>
+              <span className="text-amber-300 font-bold text-sm">MACH 0.88</span>
+              <span className="text-[9px] text-slate-400 block">460 KT TRUE AIRSPEED</span>
+            </div>
+            <div className="text-center">
+              <span className="text-slate-500 text-[9px] block">AIRSPACE CORRIDOR</span>
+              <span className="text-white font-bold text-sm">LAGOS (DNMM) ➔ ABUJA (DNAA)</span>
+              <span className="text-[9px] text-emerald-400 block">• RNAV-1 DIRECT VIP AIRWAY</span>
+            </div>
+            <div className="text-right">
+              <span className="text-slate-500 text-[9px] block">BARO ALTITUDE</span>
+              <span className="text-amber-300 font-bold text-sm">45,000 FT</span>
+              <span className="text-[9px] text-slate-400 block">FL450 STANDARD (1013 HPA)</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Over-Wing Turbofan Cam Telemetry Overlay */}
+      {cameraMode === 'wing' && (
+        <div className="pointer-events-none fixed bottom-20 left-4 sm:left-8 z-20 font-mono text-xs select-none">
+          <div className="bg-[#070b12]/90 backdrop-blur-md border border-amber-500/30 rounded-2xl p-3.5 text-slate-300 shadow-2xl max-w-xs space-y-2">
+            <div className="flex items-center justify-between border-b border-white/10 pb-1.5">
+              <span className="text-amber-300 font-bold text-[11px] flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                STBD WING CAM • CH-02
+              </span>
+              <span className="text-[9px] text-emerald-400">LIVE FEED</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-[10px]">
+              <div>
+                <span className="text-slate-500 block">TURBOFAN ENG 2</span>
+                <span className="text-amber-300 font-bold">98.4% N1</span>
+              </div>
+              <div>
+                <span className="text-slate-500 block">OAT TEMP</span>
+                <span className="text-white font-bold">-56° C</span>
+              </div>
+              <div>
+                <span className="text-slate-500 block">EGT EXHAUST</span>
+                <span className="text-amber-300 font-bold">642° C</span>
+              </div>
+              <div>
+                <span className="text-slate-500 block">VIBRATION</span>
+                <span className="text-emerald-400 font-bold">0.04 IPS NORMAL</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 3D Viewport Controls HUD Pill (Right-aligned, minimalist & luxury) */}
-      <aside aria-label="3D Viewport Controls" className="pointer-events-auto absolute top-24 right-4 sm:right-8 z-30 flex flex-col gap-2 bg-[#0d131f]/85 backdrop-blur-md border border-amber-500/20 rounded-2xl p-2 shadow-2xl text-xs">
-        <div className="px-2 py-1 text-[10px] uppercase font-mono tracking-widest text-amber-400/80 border-b border-white/5 flex items-center justify-between gap-3">
-          <span>3D AIRCRAFT HUD</span>
-          <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+      <aside aria-label="3D Viewport Controls" className="pointer-events-auto absolute top-24 right-4 sm:right-8 z-30 flex flex-col gap-2 bg-[#090e18]/95 backdrop-blur-xl border border-amber-500/35 rounded-2xl p-2.5 shadow-2xl text-xs max-w-[210px]">
+        <div className="px-2 py-1 text-[9px] uppercase font-mono tracking-[0.18em] text-amber-300/90 border-b border-white/5 flex items-center justify-between gap-3">
+          <span>AIRCRAFT VISUALIZER</span>
+          <span className="inline-flex items-center gap-1 text-[8px] text-emerald-400 font-bold">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+            GT-OPS
+          </span>
         </div>
 
-        <div className="grid grid-cols-2 gap-1 pt-1">
+        <div className="grid grid-cols-2 gap-1.5 pt-1">
           <button
             id="camera-mode-cinematic"
-            onClick={() => setCameraMode('cinematic')}
-            className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-all text-left ${
+            onClick={() => {
+              audioService.playClick();
+              setCameraMode('cinematic');
+            }}
+            className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-all text-left text-[11px] ${
               cameraMode === 'cinematic'
-                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 font-medium'
+                ? 'bg-amber-500/25 text-amber-300 border border-amber-500/50 font-medium shadow-sm'
                 : 'text-slate-400 hover:text-white hover:bg-white/5'
             }`}
             title="Auto-synchronize camera to page scroll"
@@ -707,13 +844,14 @@ export const JetScene: React.FC<JetSceneProps> = ({
           <button
             id="camera-mode-orbit"
             onClick={() => {
+              audioService.playClick();
               setCameraMode('orbit');
               setControlsHint(true);
               setTimeout(() => setControlsHint(false), 3500);
             }}
-            className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-all text-left ${
+            className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-all text-left text-[11px] ${
               cameraMode === 'orbit'
-                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 font-medium'
+                ? 'bg-amber-500/25 text-amber-300 border border-amber-500/50 font-medium shadow-sm'
                 : 'text-slate-400 hover:text-white hover:bg-white/5'
             }`}
             title="360 Free Orbit Inspection"
@@ -724,10 +862,13 @@ export const JetScene: React.FC<JetSceneProps> = ({
 
           <button
             id="camera-mode-cockpit"
-            onClick={() => setCameraMode('cockpit')}
-            className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-all text-left ${
+            onClick={() => {
+              audioService.playClick();
+              setCameraMode('cockpit');
+            }}
+            className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-all text-left text-[11px] ${
               cameraMode === 'cockpit'
-                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 font-medium'
+                ? 'bg-amber-500/25 text-amber-300 border border-amber-500/50 font-medium shadow-sm'
                 : 'text-slate-400 hover:text-white hover:bg-white/5'
             }`}
             title="Cockpit Horizon POV"
@@ -738,10 +879,13 @@ export const JetScene: React.FC<JetSceneProps> = ({
 
           <button
             id="camera-mode-wing"
-            onClick={() => setCameraMode('wing')}
-            className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-all text-left ${
+            onClick={() => {
+              audioService.playClick();
+              setCameraMode('wing');
+            }}
+            className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-all text-left text-[11px] ${
               cameraMode === 'wing'
-                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 font-medium'
+                ? 'bg-amber-500/25 text-amber-300 border border-amber-500/50 font-medium shadow-sm'
                 : 'text-slate-400 hover:text-white hover:bg-white/5'
             }`}
             title="Wing & Turbofan Close-up"
@@ -751,38 +895,56 @@ export const JetScene: React.FC<JetSceneProps> = ({
           </button>
         </div>
 
-        {/* Orbit instruction banner when user activates 360 mode */}
-        {controlsHint && (
-          <div className="mt-1 px-2 py-1.5 bg-amber-500/10 border border-amber-500/30 rounded-lg text-[11px] text-amber-200 text-center animate-fade-in">
-            Click & drag screen to rotate aircraft 360°
+        {/* Orbit instruction banner or return button when user activates 360 mode */}
+        {cameraMode === 'orbit' && (
+          <button
+            onClick={() => {
+              audioService.playClick();
+              setCameraMode('cinematic');
+            }}
+            className="mt-1 w-full py-1.5 px-2 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 rounded-lg text-[10px] text-amber-200 text-center transition-colors font-medium flex items-center justify-center gap-1.5 shadow-sm"
+          >
+            <RotateCcw className="w-3 h-3" />
+            <span>Return to Flight Path</span>
+          </button>
+        )}
+
+        {controlsHint && cameraMode === 'orbit' && (
+          <div className="px-2 py-1 bg-white/5 border border-white/10 rounded-lg text-[10px] text-slate-300 text-center">
+            Drag to rotate aircraft 360°
           </div>
         )}
       </aside>
 
-      {/* Flight Telemetry HUD bar (Bottom right) */}
-      <footer aria-label="Flight Telemetry" className="pointer-events-none absolute bottom-6 right-6 hidden md:flex items-center gap-6 bg-[#070c14]/80 backdrop-blur-md border border-white/10 rounded-full px-5 py-2 text-[11px] text-slate-400 font-mono">
+      {/* Flight Telemetry Avionics ribbon (Bottom right) */}
+      <footer aria-label="Flight Telemetry" className="pointer-events-none absolute bottom-6 right-6 hidden md:flex items-center gap-5 bg-[#060910]/90 backdrop-blur-md border border-amber-500/20 rounded-full px-5 py-2 text-[10px] text-slate-300 font-mono tracking-wider">
+        <div className="flex items-center gap-1.5">
+          <span className="text-amber-400/90 font-bold">GT-OPS</span>
+          <span className="text-slate-600">•</span>
+          <span className="text-slate-400">AVIONICS</span>
+        </div>
+        <div className="h-3 w-px bg-white/10" />
         <div>
-          <span className="text-slate-500 mr-1.5">ALT:</span>
+          <span className="text-slate-500 mr-1">ALT:</span>
           <span className="text-amber-300 font-semibold">
             {Math.round(41000 + scrollProgress * 10000).toLocaleString()} FT
           </span>
         </div>
         <div className="h-3 w-px bg-white/10" />
         <div>
-          <span className="text-slate-500 mr-1.5">MACH:</span>
+          <span className="text-slate-500 mr-1">CRUISE:</span>
           <span className="text-amber-300 font-semibold">
-            {(0.82 + scrollProgress * 0.10).toFixed(2)}
+            MACH {(0.82 + scrollProgress * 0.10).toFixed(2)}
           </span>
         </div>
         <div className="h-3 w-px bg-white/10" />
         <div>
-          <span className="text-slate-500 mr-1.5">AIRSPACE:</span>
+          <span className="text-slate-500 mr-1">CORRIDOR:</span>
           <span className="text-slate-200">LAGOS FIR (DNKK)</span>
         </div>
         <div className="h-3 w-px bg-white/10" />
         <div>
-          <span className="text-slate-500 mr-1.5">STATUS:</span>
-          <span className="text-emerald-400 font-medium">DISPATCH READY</span>
+          <span className="text-emerald-400 font-medium">PRESIDENTIAL CLEARED</span>
         </div>
       </footer>
     </div>

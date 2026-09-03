@@ -28,20 +28,20 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
     <section id="hero" className="relative min-h-screen flex flex-col justify-between pt-28 pb-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto z-10">
       {/* Top Tagline & Main Luxury Headline */}
       <div className="pt-8 sm:pt-16 max-w-3xl space-y-6">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-mono tracking-widest uppercase backdrop-blur-md">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#121927]/90 border border-amber-500/30 text-amber-300 text-xs font-mono tracking-widest uppercase backdrop-blur-md">
           <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-          <span>NIGERIAN & GLOBAL BESPOKE AVIATION</span>
+          <span>GT PRIVATE JET CHARTER & AVIATION</span>
         </div>
 
         <h1 className="text-4xl sm:text-6xl lg:text-7xl font-display font-extrabold text-white tracking-tight leading-[1.08]">
-          ELEVATE BEYOND <br />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-amber-600">
-            ORDINARY SKIES.
+          SOVEREIGN FLIGHT. <br />
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-100 via-amber-300 to-amber-500">
+            TRANSCEND THE SKIES.
           </span>
         </h1>
 
         <p className="text-base sm:text-lg text-slate-300 font-light leading-relaxed max-w-2xl">
-          The premier private jet charter collective in Nigeria. Seamlessly connecting Lagos, Abuja, Port Harcourt, and international hubs with unmatched discretion, precision engineering, and presidential-grade concierge service.
+          The pinnacle of private aviation in Nigeria. Direct point-to-point connections between Lagos, Abuja, Port Harcourt, London, and Dubai with certified NCAA flight crews, tailored culinary curation, and 24/7 presidential flight dispatch.
         </p>
 
         {/* Quick CTAs */}
@@ -52,7 +52,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               audioService.playClick();
               onExploreFleet();
             }}
-            className="px-6 py-3.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-[#070b12] text-sm font-semibold uppercase tracking-wider shadow-xl shadow-amber-500/25 transition-all flex items-center gap-2 hover:translate-y-[-2px]"
+            className="px-6 py-3.5 rounded-xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:to-amber-400 text-[#070b12] text-xs font-bold uppercase tracking-wider shadow-xl shadow-amber-500/20 transition-all flex items-center gap-2 hover:translate-y-[-1px]"
           >
             <span>Explore 3D Fleet</span>
             <ArrowRight className="w-4 h-4" />
@@ -64,7 +64,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               audioService.playClick();
               onViewAvailability();
             }}
-            className="px-6 py-3.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 hover:border-amber-400/40 text-slate-200 text-sm font-medium transition-all backdrop-blur-md"
+            className="px-6 py-3.5 rounded-xl bg-[#0d1422]/80 hover:bg-[#121b2c] border border-amber-500/20 hover:border-amber-400/50 text-slate-200 text-xs font-semibold uppercase tracking-wider transition-all backdrop-blur-md"
           >
             Live Aircraft Availability
           </button>
@@ -176,10 +176,10 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         </div>
       </div>
 
-      {/* Scroll Down Hint with 3D Takeoff cue */}
-      <div className="pt-8 flex flex-col items-center justify-center text-slate-400 gap-1 animate-bounce">
-        <span className="text-[11px] font-mono tracking-widest uppercase text-amber-400/80">Scroll to Fly</span>
-        <ChevronDown className="w-4 h-4 text-amber-400" />
+      {/* Scroll Down Hint with sleek line */}
+      <div className="pt-8 flex flex-col items-center justify-center text-slate-400 gap-2">
+        <span className="text-[10px] font-mono tracking-[0.2em] uppercase text-amber-300/80">Scroll to Advance Flight Path</span>
+        <div className="w-px h-8 bg-gradient-to-b from-amber-400/80 to-transparent" />
       </div>
     </section>
   );

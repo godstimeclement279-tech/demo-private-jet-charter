@@ -1,6 +1,6 @@
 {
-  "name": "AeroLuxe Nigeria - Luxury Private Jet Charter",
-  "description": "Premier private jet charter and VIP aviation in Nigeria featuring a scroll-animated 3D fleet showcase, interactive route booking, real-time aircraft availability calendar, and dedicated concierge request services.",
+  "name": "GT Private Jet Charter and Aviation",
+  "description": "Premier private jet charter and VIP aviation collective in Nigeria featuring a scroll-animated 3D fleet showcase, interactive route booking, real-time aircraft availability calendar, and presidential concierge services.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

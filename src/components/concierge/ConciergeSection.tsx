@@ -51,7 +51,7 @@ export const ConciergeSection: React.FC = () => {
           <div className="bg-[#0b101c]/90 border border-amber-500/20 rounded-3xl p-6 sm:p-8 backdrop-blur-xl shadow-2xl space-y-6">
             <h3 className="font-display font-bold text-white text-xl flex items-center gap-2">
               <Shield className="w-5 h-5 text-amber-400" />
-              <span>THE AEROLUXE STANDARD</span>
+              <span>THE GT AVIATION STANDARD</span>
             </h3>
 
             <div className="space-y-4 text-xs text-slate-300 leading-relaxed">
@@ -92,7 +92,7 @@ export const ConciergeSection: React.FC = () => {
                 Direct VIP Hotline
               </span>
               <div className="text-lg font-display font-bold text-white mt-1">
-                +234 (0) 1 888 LUXE / +234 803 000 7777
+                +234 (0) 1 888 GTJET / +234 803 000 7777
               </div>
               <p className="text-[11px] text-slate-400 mt-0.5">
                 Available 24 hours a day for immediate emergency medical or urgent executive charter dispatch.

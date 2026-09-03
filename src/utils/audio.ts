@@ -60,22 +60,37 @@ class AudioManager {
     this.initContext();
     if (!this.ctx) return;
 
-    // Luxurious 2-tone aircraft cabin chime (Ding-Dong)
+    // Luxurious 2-tone aircraft cabin chime with subtle warm harmonic overtone
     const playTone = (freq: number, startTime: number, duration: number) => {
       if (!this.ctx) return;
+      
+      // Fundamental
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
       osc.type = 'sine';
       osc.frequency.setValueAtTime(freq, startTime);
 
-      gain.gain.setValueAtTime(0.08, startTime);
+      gain.gain.setValueAtTime(0.06, startTime);
       gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
 
       osc.connect(gain);
       gain.connect(this.ctx.destination);
 
+      // Subtle 2nd harmonic for warm acoustic bell resonance
+      const oscHarmonic = this.ctx.createOscillator();
+      const gainHarmonic = this.ctx.createGain();
+      oscHarmonic.type = 'sine';
+      oscHarmonic.frequency.setValueAtTime(freq * 2, startTime);
+      gainHarmonic.gain.setValueAtTime(0.015, startTime);
+      gainHarmonic.gain.exponentialRampToValueAtTime(0.00001, startTime + duration * 0.7);
+
+      oscHarmonic.connect(gainHarmonic);
+      gainHarmonic.connect(this.ctx.destination);
+
       osc.start(startTime);
+      oscHarmonic.start(startTime);
       osc.stop(startTime + duration);
+      oscHarmonic.stop(startTime + duration);
     };
 
     const now = this.ctx.currentTime;

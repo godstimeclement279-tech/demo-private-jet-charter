@@ -14,19 +14,24 @@ export const Footer: React.FC = () => {
         {/* Brand Description */}
         <div className="space-y-3 md:col-span-1">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center">
-              <Plane className="w-4 h-4 text-[#070b12] -rotate-45" />
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#1a2335] to-[#0c121e] border border-amber-400/40 flex items-center justify-center">
+              <span className="font-display font-bold text-xs text-amber-300">GT</span>
             </div>
-            <span className="font-display font-bold text-white text-base tracking-wider">
-              AEROLUXE <span className="text-amber-400 font-light">NIGERIA</span>
-            </span>
+            <div>
+              <span className="font-display font-bold text-white text-base tracking-wider block">
+                GT PRIVATE JET
+              </span>
+              <span className="text-[9px] uppercase tracking-[0.2em] text-amber-400/90 font-mono block">
+                CHARTER & AVIATION
+              </span>
+            </div>
           </div>
           <p className="text-slate-400 leading-relaxed text-[11px]">
             West Africa’s premier private jet charter and VIP aviation collective. Exceptional safety, bespoke luxury, and transcontinental non-stop access.
           </p>
           <div className="flex items-center gap-2 text-emerald-400 font-mono text-[10px]">
             <Shield className="w-3.5 h-3.5" />
-            <span>NCAA LICENSED • NCAA/AOC/049</span>
+            <span>NCAA LICENSED • NCAA/AOC/GT-088</span>
           </div>
         </div>
 
@@ -72,15 +77,15 @@ export const Footer: React.FC = () => {
           <div className="space-y-1 text-[11px]">
             <p className="flex items-center gap-1.5 text-white font-medium">
               <Phone className="w-3.5 h-3.5 text-amber-400" />
-              +234 (0) 1 888 LUXE / +234 803 000 7777
+              +234 (0) 1 888 GTJET / +234 803 000 7777
             </p>
             <p className="flex items-center gap-1.5">
               <Mail className="w-3.5 h-3.5 text-amber-400" />
-              charter@aeroluxe.ng
+              charter@gtcharter.aero
             </p>
             <div className="pt-2">
               <span className="px-2 py-1 rounded bg-amber-500/10 border border-amber-500/20 text-amber-300 text-[10px] font-mono block text-center">
-                Interactive Showcase Demo • No Payment
+                Interactive VIP Flight Showcase • Live Demo
               </span>
             </div>
           </div>
@@ -90,7 +95,7 @@ export const Footer: React.FC = () => {
       {/* Bottom bar */}
       <div className="max-w-7xl mx-auto pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-slate-500">
         <div>
-          © {new Date().getFullYear()} AeroLuxe Nigeria Charter Services Ltd. All rights reserved.
+          © {new Date().getFullYear()} GT Private Jet Charter and Aviation Ltd. All rights reserved.
         </div>
         <button
           onClick={scrollToTop}
