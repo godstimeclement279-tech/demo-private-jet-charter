@@ -47,15 +47,15 @@ export const Navbar: React.FC<NavbarProps> = ({
           className="flex items-center gap-3 cursor-pointer group"
         >
           <div className="relative w-11 h-11 rounded-xl bg-gradient-to-br from-[#1a2335] to-[#0c121e] border border-amber-400/40 flex items-center justify-center shadow-lg shadow-black/40 group-hover:border-amber-300 transition-all">
-            <span className="font-display font-extrabold text-xs tracking-wider text-amber-300">GT</span>
+            <span className="font-display font-extrabold text-[11px] tracking-wider text-amber-300">FJL</span>
             <Plane className="w-3.5 h-3.5 text-amber-400 -rotate-45 absolute -top-1 -right-1 drop-shadow" />
           </div>
           <div>
             <span className="font-display font-bold text-base sm:text-lg tracking-wider text-white flex items-center gap-1.5">
-              GT PRIVATE JET
+              FLY JET LIFE
             </span>
             <p className="text-[9px] uppercase tracking-[0.25em] text-amber-400/90 font-mono">
-              CHARTER & AVIATION
+              LIMITED
             </p>
           </div>
         </div>

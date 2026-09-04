@@ -30,7 +30,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       <div className="pt-8 sm:pt-16 max-w-3xl space-y-6">
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#121927]/90 border border-amber-500/30 text-amber-300 text-xs font-mono tracking-widest uppercase backdrop-blur-md">
           <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-          <span>GT PRIVATE JET CHARTER & AVIATION</span>
+          <span>FLY JET LIFE LIMITED</span>
         </div>
 
         <h1 className="text-4xl sm:text-6xl lg:text-7xl font-display font-extrabold text-white tracking-tight leading-[1.08]">

@@ -55,7 +55,7 @@ export const BookingConfirmationModal: React.FC<BookingConfirmationModalProps> =
         <div className="text-center space-y-2 pb-6 border-b border-white/10">
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/10 border border-amber-400/30 text-amber-300 text-xs font-mono tracking-wider">
             <Award className="w-3.5 h-3.5 text-amber-400" />
-            <span>GT PRIVATE JET CHARTER AND AVIATION</span>
+            <span>FLY JET LIFE LIMITED</span>
           </div>
           <h3 className="text-2xl sm:text-3xl font-display font-bold text-white tracking-tight">
             VIP FLIGHT MANIFEST & CLEARANCE
@@ -135,10 +135,10 @@ export const BookingConfirmationModal: React.FC<BookingConfirmationModalProps> =
           <div className="p-3.5 bg-black/40 border border-white/5 rounded-xl space-y-1.5 text-xs">
             <div className="flex items-center gap-2 text-amber-300 font-medium">
               <Shield className="w-3.5 h-3.5" />
-              <span>GT Aviation VIP FBO Protocol (ExecuJet / Quits Aviation Wing)</span>
+              <span>Fly Jet Life VIP FBO Protocol (ExecuJet / Quits Aviation Wing)</span>
             </div>
             <p className="text-slate-300 text-[11px] leading-relaxed">
-              Arrive at the private aviation terminal 15 minutes prior to departure. A dedicated GT Aviation personal flight liaison meets your motorcade directly at the security gates. Customs and baggage handling are conducted in your private VIP lounge suite.
+              Arrive at the private aviation terminal 15 minutes prior to departure. A dedicated Fly Jet Life personal flight liaison meets your motorcade directly at the security gates. Customs and baggage handling are conducted in your private VIP lounge suite.
             </p>
           </div>
 

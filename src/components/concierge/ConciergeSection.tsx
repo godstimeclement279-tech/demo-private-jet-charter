@@ -51,7 +51,7 @@ export const ConciergeSection: React.FC = () => {
           <div className="bg-[#0b101c]/90 border border-amber-500/20 rounded-3xl p-6 sm:p-8 backdrop-blur-xl shadow-2xl space-y-6">
             <h3 className="font-display font-bold text-white text-xl flex items-center gap-2">
               <Shield className="w-5 h-5 text-amber-400" />
-              <span>THE GT AVIATION STANDARD</span>
+              <span>THE FLY JET LIFE STANDARD</span>
             </h3>
 
             <div className="space-y-4 text-xs text-slate-300 leading-relaxed">
